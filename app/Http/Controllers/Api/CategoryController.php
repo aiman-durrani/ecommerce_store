@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -14,11 +16,9 @@ class CategoryController extends Controller
     /**
      * Display a listing of categories.
      */
-    public function index(): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
-        $categories = Category::all();
-
-        return response()->json($categories);
+        return CategoryResource::collection(Category::all());
     }
 
     /**
@@ -35,15 +35,15 @@ class CategoryController extends Controller
 
         $category = Category::create($data);
 
-        return response()->json($category, 201);
+        return response()->json(new CategoryResource($category), 201);
     }
 
     /**
      * Display the specified category.
      */
-    public function show(Category $category): JsonResponse
+    public function show(Category $category): CategoryResource
     {
-        return response()->json($category);
+        return new CategoryResource($category);
     }
 
     /**
@@ -60,7 +60,7 @@ class CategoryController extends Controller
 
         $category->update($data);
 
-        return response()->json($category);
+        return response()->json(new CategoryResource($category));
     }
 
     /**
