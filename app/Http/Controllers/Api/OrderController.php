@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutRequest;
+use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\OrderService;
@@ -57,5 +58,39 @@ class OrderController extends Controller
         $order->load('orderItems.product');
 
         return new OrderResource($order);
+    }
+
+    /**
+     * Display a listing of all orders for admin users.
+     */
+    public function adminIndex(Request $request): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', Order::class);
+
+        $orders = Order::query()
+            ->with('orderItems.product')
+            ->when($request->query('status'), function ($query, $status) {
+                $query->where('status', $status);
+            })
+            ->latest()
+            ->paginate(15);
+
+        return OrderResource::collection($orders);
+    }
+
+    /**
+     * Update the status of an order for admin users.
+     */
+    public function updateStatus(UpdateOrderStatusRequest $request, Order $order): JsonResponse
+    {
+        $this->authorize('update', $order);
+
+        $order->update([
+            'status' => $request->validated()['status'],
+        ]);
+
+        $order->load('orderItems.product');
+
+        return response()->json(new OrderResource($order));
     }
 }

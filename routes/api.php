@@ -48,3 +48,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 });
 
+// Admin routes
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    Route::get('/orders', [OrderController::class, 'adminIndex']);
+    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+});
+
