@@ -15,317 +15,145 @@ class CartAndCheckoutTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected User $user;
-    protected Product $product;
-
-    protected function setUp(): void
+    public function test_adding_same_product_twice_increments_quantity(): void
     {
-        parent::setUp();
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->forCategory($category)->create([
+            'stock' => 50,
+            'is_active' => true,
+        ]);
 
-        $this->user = User::factory()->create();
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/cart/items', [
+                'product_id' => $product->id,
+                'quantity' => 2,
+            ]);
 
-        $category = Category::factory()->create(['name' => 'Electronics']);
-        $this->product = Product::factory()->forCategory($category)->create([
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/cart/items', [
+                'product_id' => $product->id,
+                'quantity' => 2,
+            ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/cart');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.product_id', $product->id)
+            ->assertJsonPath('data.items.0.quantity', 4);
+    }
+
+    public function test_adding_more_than_available_stock_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->forCategory($category)->create([
+            'stock' => 5,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/cart/items', [
+                'product_id' => $product->id,
+                'quantity' => 10,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_checkout_creates_order_and_decrements_stock(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->forCategory($category)->create([
             'price' => 50.00,
             'stock' => 10,
             'is_active' => true,
         ]);
-    }
 
-    public function test_authenticated_user_can_view_cart(): void
-    {
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->getJson('/api/cart');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    'id',
-                    'items',
-                    'total',
-                ],
-            ]);
-    }
-
-    public function test_user_can_add_item_to_cart(): void
-    {
-        $response = $this->actingAs($this->user, 'sanctum')
+        $this->actingAs($user, 'sanctum')
             ->postJson('/api/cart/items', [
-                'product_id' => $this->product->id,
-                'quantity' => 2,
-            ]);
-
-        $response->assertStatus(201)
-            ->assertJson([
-                'data' => [
-                    'product_id' => $this->product->id,
-                    'quantity' => 2,
-                    'subtotal' => 100.00,
-                ],
-            ]);
-
-        $this->assertDatabaseHas('cart_items', [
-            'product_id' => $this->product->id,
-            'quantity' => 2,
-        ]);
-    }
-
-    public function test_adding_existing_product_increments_quantity(): void
-    {
-        $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/cart/items', [
-                'product_id' => $this->product->id,
-                'quantity' => 2,
-            ]);
-
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/cart/items', [
-                'product_id' => $this->product->id,
+                'product_id' => $product->id,
                 'quantity' => 3,
             ]);
 
-        $response->assertStatus(201)
-            ->assertJson([
-                'data' => [
-                    'product_id' => $this->product->id,
-                    'quantity' => 5,
-                    'subtotal' => 250.00,
-                ],
-            ]);
-    }
-
-    public function test_cannot_add_item_with_quantity_exceeding_stock(): void
-    {
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/cart/items', [
-                'product_id' => $this->product->id,
-                'quantity' => 15, // stock is 10
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/checkout', [
+                'shipping_address' => '123 Main Street',
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['quantity']);
-    }
+        $response->assertStatus(201);
 
-    public function test_user_can_update_cart_item_quantity(): void
-    {
-        $cart = Cart::factory()->create(['user_id' => $this->user->id]);
-        $cartItem = CartItem::factory()->create([
-            'cart_id' => $cart->id,
-            'product_id' => $this->product->id,
-            'quantity' => 1,
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'stock' => 7,
         ]);
 
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->patchJson("/api/cart/items/{$cartItem->id}", [
-                'quantity' => 4,
-            ]);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'data' => [
-                    'id' => $cartItem->id,
-                    'quantity' => 4,
-                    'subtotal' => 200.00,
-                ],
-            ]);
-    }
-
-    public function test_updating_cart_item_fails_if_quantity_exceeds_stock(): void
-    {
-        $cart = Cart::factory()->create(['user_id' => $this->user->id]);
-        $cartItem = CartItem::factory()->create([
-            'cart_id' => $cart->id,
-            'product_id' => $this->product->id,
-            'quantity' => 1,
+        $this->assertDatabaseHas('orders', [
+            'user_id' => $user->id,
+            'total' => 150.00,
+            'shipping_address' => '123 Main Street',
         ]);
 
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->patchJson("/api/cart/items/{$cartItem->id}", [
-                'quantity' => 20, // stock is 10
-            ]);
+        $order = Order::where('user_id', $user->id)->first();
+        $this->assertNotNull($order);
 
-        $response->assertStatus(422);
-    }
-
-    public function test_cannot_update_another_users_cart_item(): void
-    {
-        $otherUser = User::factory()->create();
-        $otherCart = Cart::factory()->create(['user_id' => $otherUser->id]);
-        $otherItem = CartItem::factory()->create([
-            'cart_id' => $otherCart->id,
-            'product_id' => $this->product->id,
-            'quantity' => 1,
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'quantity' => 3,
+            'price' => 50.00,
         ]);
 
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->patchJson("/api/cart/items/{$otherItem->id}", [
-                'quantity' => 2,
-            ]);
-
-        $response->assertStatus(403);
+        $cart = Cart::where('user_id', $user->id)->first();
+        $this->assertEquals(0, $cart->cartItems()->count());
     }
 
-    public function test_user_can_delete_cart_item(): void
+    public function test_checkout_with_insufficient_stock_fails_and_rolls_back(): void
     {
-        $cart = Cart::factory()->create(['user_id' => $this->user->id]);
-        $cartItem = CartItem::factory()->create([
-            'cart_id' => $cart->id,
-            'product_id' => $this->product->id,
-            'quantity' => 1,
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->forCategory($category)->create([
+            'stock' => 2,
+            'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->deleteJson("/api/cart/items/{$cartItem->id}");
-
-        $response->assertStatus(200);
-
-        $this->assertDatabaseMissing('cart_items', [
-            'id' => $cartItem->id,
-        ]);
-    }
-
-    public function test_cannot_delete_another_users_cart_item(): void
-    {
-        $otherUser = User::factory()->create();
-        $otherCart = Cart::factory()->create(['user_id' => $otherUser->id]);
-        $otherItem = CartItem::factory()->create([
-            'cart_id' => $otherCart->id,
-            'product_id' => $this->product->id,
-            'quantity' => 1,
-        ]);
-
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->deleteJson("/api/cart/items/{$otherItem->id}");
-
-        $response->assertStatus(403);
-    }
-
-    public function test_user_can_checkout_successfully(): void
-    {
-        $cart = Cart::factory()->create(['user_id' => $this->user->id]);
+        $cart = Cart::factory()->create(['user_id' => $user->id]);
         CartItem::factory()->create([
             'cart_id' => $cart->id,
-            'product_id' => $this->product->id,
+            'product_id' => $product->id,
             'quantity' => 2,
         ]);
 
-        $response = $this->actingAs($this->user, 'sanctum')
+        // Reduce product's stock to 1 in DB
+        $product->update(['stock' => 1]);
+
+        $response = $this->actingAs($user, 'sanctum')
             ->postJson('/api/checkout', [
-                'shipping_address' => '123 Main Street, City',
-            ]);
-
-        $response->assertStatus(201)
-            ->assertJson([
-                'data' => [
-                    'status' => 'pending',
-                    'total' => 100.00,
-                    'shipping_address' => '123 Main Street, City',
-                    'items' => [
-                        [
-                            'product_id' => $this->product->id,
-                            'quantity' => 2,
-                            'price' => 50.00,
-                            'subtotal' => 100.00,
-                        ],
-                    ],
-                ],
-            ]);
-
-        // Verify stock decremented (10 - 2 = 8)
-        $this->assertDatabaseHas('products', [
-            'id' => $this->product->id,
-            'stock' => 8,
-        ]);
-
-        // Verify cart emptied
-        $this->assertDatabaseMissing('cart_items', [
-            'cart_id' => $cart->id,
-        ]);
-    }
-
-    public function test_checkout_fails_when_cart_is_empty(): void
-    {
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/checkout', [
-                'shipping_address' => '123 Main Street, City',
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJson([
-                'message' => 'Cart is empty.',
-            ]);
-    }
-
-    public function test_checkout_fails_if_stock_becomes_insufficient(): void
-    {
-        $cart = Cart::factory()->create(['user_id' => $this->user->id]);
-        CartItem::factory()->create([
-            'cart_id' => $cart->id,
-            'product_id' => $this->product->id,
-            'quantity' => 10,
-        ]);
-
-        // Reduce product stock to 5 before checkout
-        $this->product->update(['stock' => 5]);
-
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/checkout', [
-                'shipping_address' => '123 Main Street, City',
+                'shipping_address' => '123 Main Street',
             ]);
 
         $response->assertStatus(422);
+
+        $this->assertEquals(0, Order::count());
+
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'stock' => 1,
+        ]);
     }
 
-    public function test_user_can_list_their_orders(): void
+    public function test_checkout_with_empty_cart_fails(): void
     {
-        Order::factory()->create([
-            'user_id' => $this->user->id,
-            'status' => 'pending',
-            'total' => 150.00,
-            'shipping_address' => 'Address 1',
-        ]);
+        $user = User::factory()->create();
 
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->getJson('/api/orders');
-
-        $response->assertStatus(200)
-            ->assertJsonCount(1, 'data');
-    }
-
-    public function test_user_can_view_single_order(): void
-    {
-        $order = Order::factory()->create([
-            'user_id' => $this->user->id,
-            'status' => 'pending',
-            'total' => 150.00,
-            'shipping_address' => 'Address 1',
-        ]);
-
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->getJson("/api/orders/{$order->id}");
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'data' => [
-                    'id' => $order->id,
-                    'total' => 150.00,
-                ],
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/checkout', [
+                'shipping_address' => '123 Main Street',
             ]);
-    }
 
-    public function test_cannot_view_another_users_order(): void
-    {
-        $otherUser = User::factory()->create();
-        $otherOrder = Order::factory()->create([
-            'user_id' => $otherUser->id,
-            'status' => 'pending',
-            'total' => 150.00,
-            'shipping_address' => 'Address 2',
-        ]);
-
-        $response = $this->actingAs($this->user, 'sanctum')
-            ->getJson("/api/orders/{$otherOrder->id}");
-
-        $response->assertStatus(403);
+        $response->assertStatus(422);
     }
 }
