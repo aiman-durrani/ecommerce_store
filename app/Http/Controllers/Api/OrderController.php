@@ -68,7 +68,7 @@ class OrderController extends Controller
         $this->authorize('viewAny', Order::class);
 
         $orders = Order::query()
-            ->with('orderItems.product')
+            ->with(['orderItems.product', 'user'])
             ->when($request->query('status'), function ($query, $status) {
                 $query->where('status', $status);
             })
@@ -89,7 +89,7 @@ class OrderController extends Controller
             'status' => $request->validated()['status'],
         ]);
 
-        $order->load('orderItems.product');
+        $order->load(['orderItems.product', 'user']);
 
         return response()->json(new OrderResource($order));
     }

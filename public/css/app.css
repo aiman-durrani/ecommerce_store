@@ -33,6 +33,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   letter-spacing: -0.02em;
 }
 
+/* Navbar & Header Overrides */
 .navbar-custom {
   background-color: var(--nav-bg) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -58,6 +59,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   color: #FFFFFF !important;
 }
 
+/* Accent Buttons */
 .btn-emerald {
   background-color: var(--accent-emerald) !important;
   color: #FFFFFF !important;
@@ -90,6 +92,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   color: #FFFFFF !important;
 }
 
+/* Product Cards */
 .product-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-light) !important;
@@ -127,6 +130,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: var(--font-heading);
 }
 
+/* Cart Badge Micro-animation */
 @keyframes cartBounce {
   0% { transform: scale(1); }
   50% { transform: scale(1.4); }
@@ -137,12 +141,14 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   animation: cartBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* Button Micro-interaction */
 .btn-added-success {
   background-color: #10B981 !important;
   color: #FFFFFF !important;
   transform: scale(1.03);
 }
 
+/* Grid Filter Fade Transition */
 .grid-transition {
   transition: opacity 0.2s ease-in-out;
 }
@@ -150,6 +156,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   opacity: 0.2;
 }
 
+/* Custom Badges & Form Controls */
 .bg-emerald-subtle {
   background-color: var(--accent-emerald-light) !important;
   color: var(--accent-emerald) !important;
