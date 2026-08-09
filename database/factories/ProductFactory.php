@@ -113,14 +113,17 @@ class ProductFactory extends Factory
      * and pick a name that actually matches it.
      */
     public function forCategory(Category $category): static
-    {
-        return $this->state(function () use ($category) {
-            $names = self::$productsByCategory[$category->name] ?? null;
+{
+    return $this->state(function () use ($category) {
+        $names = self::$productsByCategory[$category->name] ?? null;
+        $name = $names ? fake()->randomElement($names) : fake()->words(3, true);
 
-            return [
-                'category_id' => $category->id,
-                'name' => $names ? fake()->randomElement($names) : fake()->words(3, true),
-            ];
-        });
-    }
+        return [
+            'category_id' => $category->id,
+            'name' => $name,
+            'slug' => Str::slug($name) . '-' . fake()->unique()->numberBetween(1000, 9999),
+        ];
+    });
+}
+
 }
