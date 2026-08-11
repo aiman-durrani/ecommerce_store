@@ -126,7 +126,7 @@ cp .env.example .env
 php artisan key:generate
 
 # Configure your database and Gemini API key in .env
-DB_DATABASE=aura_ecommerce
+DB_DATABASE=ecommerce_store
 DB_USERNAME=root
 DB_PASSWORD=
 
