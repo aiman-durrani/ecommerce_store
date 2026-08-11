@@ -29,14 +29,22 @@ Searching **"something to block out noise while traveling"** — a phrase with z
 
 ### Admin panel
 <!-- Place admin orders/products management screenshot here -->
-![Admin panel](./screenshots/admin_dashbaord.png) ! [product Mangement](./screenshots/Admin_product_management.png) ! [customer_orders_summary](./screenshots/Customer_orders.png)
+![Admin dashboard](./screenshots/admin_dashboard.png)
+---
+![Product management](./screenshots/Admin_product_management.png)
+---
+![Customer orders summary](./screenshots/Customer_orders.png)
+---
 
 
 ### API Testing (Postman)
 <!-- Place cropped Postman request/response screenshots here -->
 ![Postman — authorization test](./screenshots/postaman_testing.png)
+------
 ![Postman — authorization test](./screenshots/postman_register.png)
+-----
 ![Postman — authorization test](./screenshots/postman_login.png)
+-----
 ![Postman — authorization test](./screenshots/postman_logout.png)
 
 
