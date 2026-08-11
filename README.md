@@ -10,39 +10,35 @@ A complete e-commerce system built from scratch in **Laravel 13** — REST API, 
 
 ### Storefront
 <!-- Place storefront homepage / product grid screenshot here -->
-![Storefront homepage](./screenshots/storefront-homepage.png)
+![Storefront homepage](./screenshots/storefront_homepage.png)
 
 ### Product Detail Page
 <!-- Place product detail page screenshot here -->
-![Product detail page](./screenshots/product-detail.png)
+![Product detail page](./screenshots/Product_detail.png)
 
 ### Semantic Search — AI vs Exact Match
 Searching **"something to block out noise while traveling"** — a phrase with zero literal keyword overlap with any product name.
 
 | Exact Match | AI Search |
 |---|---|
-| ![Exact match — no results](./screenshots/search-exact-match.png) | ![AI search — relevant results](./screenshots/search-ai-mode.png) |
+| ![Exact match — no results](./screenshots/Exact_match.png) | ![AI search — relevant results](./screenshots/AI_Search.png) |
 
 ### AI-Generated Product Description
 <!-- Place the admin "Generate with AI" button + result screenshot here -->
-![AI-generated description](./screenshots/ai-description-generation.png)
+![AI-generated description](./screenshots/AI_generated_description.png)
 
-### Admin Panel
+### Admin panel
 <!-- Place admin orders/products management screenshot here -->
-![Admin panel](./screenshots/admin-panel.png)
+![Admin panel](./screenshots/admin_dashbaord.png) ! [product Mangement](./screenshots/Admin_product_management.png) ! [customer_orders_summary](./screenshots/Customer_orders.png)
+
 
 ### API Testing (Postman)
 <!-- Place cropped Postman request/response screenshots here -->
-![Postman — authorization test](./screenshots/postman-authorization-test.png)
-![Postman — checkout flow](./screenshots/postman-checkout-flow.png)
+![Postman — authorization test](./screenshots/postaman_testing.png)
+![Postman — authorization test](./screenshots/postman_register.png)
+![Postman — authorization test](./screenshots/postman_login.png)
+![Postman — authorization test](./screenshots/postman_logout.png)
 
-### Database Design (ERD)
-<!-- Place the ERD diagram here -->
-![Database ERD](./screenshots/database-erd.png)
-
-### Automated Test Suite
-<!-- Place a "Tests: X passed" terminal screenshot here -->
-![Passing test suite](./screenshots/test-suite-passing.png)
 
 ---
 
