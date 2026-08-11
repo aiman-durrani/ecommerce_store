@@ -1,58 +1,218 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AURA — Full-Stack E-Commerce Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A complete e-commerce system built from scratch in **Laravel 13** — REST API, role-based authentication, a customer storefront, an admin panel, and AI-powered features using Laravel's new first-party **AI SDK**.
 
-## About Laravel
+> 📷 **Note:** Product images are placeholders (seeded via a stock photo API), not real product photography. The focus of this project is backend architecture, API design, and AI integration — not sourcing real inventory.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 📸 Screenshots
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Storefront
+<!-- Place storefront homepage / product grid screenshot here -->
+![Storefront homepage](./screenshots/storefront-homepage.png)
 
-## Learning Laravel
+### Product Detail Page
+<!-- Place product detail page screenshot here -->
+![Product detail page](./screenshots/product-detail.png)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Semantic Search — AI vs Exact Match
+Searching **"something to block out noise while traveling"** — a phrase with zero literal keyword overlap with any product name.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Exact Match | AI Search |
+|---|---|
+| ![Exact match — no results](./screenshots/search-exact-match.png) | ![AI search — relevant results](./screenshots/search-ai-mode.png) |
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### AI-Generated Product Description
+<!-- Place the admin "Generate with AI" button + result screenshot here -->
+![AI-generated description](./screenshots/ai-description-generation.png)
 
-## Agentic Development
+### Admin Panel
+<!-- Place admin orders/products management screenshot here -->
+![Admin panel](./screenshots/admin-panel.png)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### API Testing (Postman)
+<!-- Place cropped Postman request/response screenshots here -->
+![Postman — authorization test](./screenshots/postman-authorization-test.png)
+![Postman — checkout flow](./screenshots/postman-checkout-flow.png)
+
+### Database Design (ERD)
+<!-- Place the ERD diagram here -->
+![Database ERD](./screenshots/database-erd.png)
+
+### Automated Test Suite
+<!-- Place a "Tests: X passed" terminal screenshot here -->
+![Passing test suite](./screenshots/test-suite-passing.png)
+
+---
+
+## ✨ Features
+
+### Backend / API
+- RESTful API built with **Laravel 13**, authenticated via **Sanctum** (token-based auth)
+- Role-based authorization (`customer` / `admin`) enforced with **Laravel Policies** — every write action is checked server-side, not just hidden in the UI
+- Full CRUD for products, categories, cart, and orders
+- Filtering, sorting, and pagination on product listings (category, price range, stock status, keyword search)
+- Cart → checkout flow wrapped in a **database transaction with row-level locking** (`lockForUpdate()`), preventing overselling when stock is limited
+- **Price snapshotting** on orders — historical orders remain accurate even if a product's price changes later
+- Consistent JSON responses via **API Resources**
+- Feature tests (PHPUnit) covering authentication, authorization, and checkout logic
+
+### Frontend
+- **Customer storefront** — product browsing with live filters, cart, checkout, and order history. Built with Blade + Bootstrap 5, with all data fetched via the REST API (not rendered directly from Eloquent)
+- **Admin panel** — product management, order status updates, dashboard stats. Gated by role on both the frontend (UX) and backend (actual security)
+
+### AI Integration
+Built using **Laravel 13's first-party AI SDK** (`laravel/ai`), released in 2026, running on **Google Gemini**.
+
+- **AI-generated product descriptions** — admin provides a product name + a few keywords, and receives a draft description to review and edit before publishing (never auto-saved)
+- **Semantic product search** — product text is converted into vector embeddings on save; search queries are matched by *meaning* (cosine similarity) rather than exact keyword matching. A query like *"good for a long flight"* returns relevant headphones even though that exact phrase never appears in any product's name or description
+
+---
+
+## 🗄️ Database Design
+
+The schema was designed before any code was written — 9 tables, all relationships mapped out upfront.
+
+**Core tables:** `users`, `categories`, `products`, `carts`, `cart_items`, `orders`, `order_items`, `reviews`, `product_embeddings` (JSON-based, for semantic search)
+
+Key design decisions:
+- `order_items.price` is a deliberate snapshot of the product's price at time of purchase — not a live reference
+- `products` uses soft deletes, so historical orders still resolve product names even if a product is later removed
+- `carts.user_id` is nullable, supporting future guest-cart functionality
+
+See the full ERD screenshot above for the complete table/relationship map.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend Framework | Laravel 13 (PHP 8.3+) |
+| Database | MySQL |
+| Authentication | Laravel Sanctum |
+| Frontend | Blade, Bootstrap 5, vanilla JS (fetch API) |
+| AI | Laravel AI SDK, Google Gemini |
+| Testing | PHPUnit |
+| API Testing | Postman |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- PHP 8.3 or higher
+- Composer
+- MySQL
+- A [Google Gemini API key](https://aistudio.google.com) (free tier available)
+
+### Installation
 
 ```bash
-composer require laravel/boost --dev
+# Clone the repository
+git clone https://github.com/your-username/aura-ecommerce.git
+cd aura-ecommerce
 
-php artisan boost:install
+# Install dependencies
+composer install
+
+# Environment setup
+cp .env.example .env
+php artisan key:generate
+
+# Configure your database and Gemini API key in .env
+DB_DATABASE=aura_ecommerce
+DB_USERNAME=root
+DB_PASSWORD=
+
+GEMINI_API_KEY=your-key-here
+
+# Run migrations and seed the database
+php artisan migrate:fresh --seed
+
+# Link storage for product image uploads
+php artisan storage:link
+
+# Backfill AI embeddings for seeded products (one-time, required for semantic search)
+php artisan app:backfill-embeddings
+
+# Serve the application
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Visit `http://127.0.0.1:8000` to view the storefront.
 
-## Contributing
+### Creating an Admin Account
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Admin accounts aren't created via public registration (by design, for security). After registering a normal account:
 
-## Code of Conduct
+```bash
+php artisan tinker
+>>> App\Models\User::where('email', 'your-email@example.com')->update(['role' => 'admin']);
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Then log in normally — you'll be redirected to `/admin/dashboard` automatically based on your role.
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 🧪 Running Tests
 
-## License
+```bash
+php artisan test
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Test suite covers:
+- Authentication (register, login, logout, token revocation)
+- Product authorization (guest read access, customer restrictions, admin permissions)
+- Cart and checkout logic (stock validation, transaction rollback, price snapshotting)
+- Order authorization (ownership checks, admin-only routes)
+
+---
+
+## 📮 API Overview
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/register` | Create a new account | Public |
+| POST | `/api/login` | Authenticate and receive a token | Public |
+| POST | `/api/logout` | Revoke current token | Required |
+| GET | `/api/products` | List products (filterable, paginated) | Public |
+| GET | `/api/products/search` | Semantic search | Public |
+| POST | `/api/cart/items` | Add item to cart | Required |
+| POST | `/api/checkout` | Convert cart to order | Required |
+| GET | `/api/orders` | View own order history | Required |
+| POST | `/api/admin/products` | Create a product | Admin only |
+| GET | `/api/admin/orders` | View all orders | Admin only |
+| PATCH | `/api/admin/orders/{id}/status` | Update order status | Admin only |
+
+A full Postman collection is available in [`/postman`](./postman) *(add your exported collection here)*.
+
+---
+
+## 🗺️ Project Roadmap / Build Order
+
+This project was built in 10 deliberate stages:
+
+1. Database layer (migrations, models, factories, seeders)
+2. Authentication (Sanctum)
+3. Categories & Products (CRUD + admin authorization via Policies)
+4. Resources, filtering & pagination
+5. Cart & checkout (with transactions and stock validation)
+6. Order management (admin)
+7. Testing & Postman
+8. Customer-facing UI
+9. Admin panel UI
+10. AI SDK integration (description generation + semantic search)
+
+---
+
+## 🤝 Feedback
+
+This project was built as a learning exercise in solid API design, authorization patterns, and integrating new AI tooling into a real Laravel application. Feedback is genuinely welcome — if you spot something that could be done better, feel free to open an issue or reach out.
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
