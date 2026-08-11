@@ -9,11 +9,11 @@ A complete e-commerce system built from scratch in **Laravel 13** — REST API, 
 ## 📸 Screenshots
 
 ### Storefront
-<!-- Place storefront homepage / product grid screenshot here -->
+
 ![Storefront homepage](./screenshots/storefront_homepage.png)
 
 ### Product Detail Page
-<!-- Place product detail page screenshot here -->
+
 ![Product detail page](./screenshots/Product_detail.png)
 
 ### Semantic Search — AI vs Exact Match
@@ -24,13 +24,13 @@ Searching **"something to block out noise while traveling"** — a phrase with z
 | ![Exact match — no results](./screenshots/Exact_match.png) | ![AI search — relevant results](./screenshots/AI_Search.png) |
 
 ### AI-Generated Product Description
-<!-- Place the admin "Generate with AI" button + result screenshot here -->
+
 ![AI-generated description](./screenshots/AI_generated_description.png)
 
 ### Admin panel
-<!-- Place admin orders/products management screenshot here -->
-![Admin dashboard](./screenshots/admin_dashboard.png)
----
+
+![Admin dashboard](./screenshots/admin_dashbaord.png)
+--
 ![Product management](./screenshots/Admin_product_management.png)
 ---
 ![Customer orders summary](./screenshots/Customer_orders.png)
@@ -38,7 +38,7 @@ Searching **"something to block out noise while traveling"** — a phrase with z
 
 
 ### API Testing (Postman)
-<!-- Place cropped Postman request/response screenshots here -->
+
 ![Postman — authorization test](./screenshots/postaman_testing.png)
 ------
 ![Postman — authorization test](./screenshots/postman_register.png)
