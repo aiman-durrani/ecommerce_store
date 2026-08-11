@@ -17,6 +17,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 
 // Protected routes
@@ -52,5 +53,6 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'adminIndex']);
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+    Route::post('/products/generate-description', [ProductController::class, 'generateDescription']);
 });
 

@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Ai\Agents\ProductDescriptionAgent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\ProductSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -59,6 +62,12 @@ class ProductController extends Controller
         $this->authorize('create', Product::class);
 
         $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $path = Storage::disk('public')->put('products', $request->file('image'));
+            $data['image_path'] = $path;
+        }
+        unset($data['image']);
+
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']) . '-' . rand(1000, 9999);
         }
@@ -91,6 +100,14 @@ class ProductController extends Controller
         $this->authorize('update', $product);
 
         $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $path = Storage::disk('public')->put('products', $request->file('image'));
+            $data['image_path'] = $path;
+        } else {
+            unset($data['image_path']);
+        }
+        unset($data['image']);
+
         if (isset($data['name']) && empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']) . '-' . rand(1000, 9999);
         }
@@ -111,5 +128,38 @@ class ProductController extends Controller
         $product->delete();
 
         return response()->json(['message' => 'Product deleted successfully']);
+    }
+
+    /**
+     * Generate an AI-suggested product description.
+     */
+    public function generateDescription(Request $request): JsonResponse
+    {
+        $this->authorize('create', Product::class);
+
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'keywords' => 'required|string',
+        ]);
+
+        $promptText = "Product name: {$validated['name']}. Keywords: {$validated['keywords']}.";
+        $response = (new ProductDescriptionAgent())->prompt($promptText);
+
+        return response()->json([
+            'description' => (string) $response,
+        ]);
+    }
+
+    /**
+     * Perform semantic search on products.
+     */
+    public function search(Request $request, ProductSearchService $searchService): AnonymousResourceCollection
+    {
+        $query = (string) $request->query('q', '');
+        $limit = (int) $request->query('limit', 12);
+
+        $products = $searchService->search($query, $limit);
+
+        return ProductResource::collection($products);
     }
 }

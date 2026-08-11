@@ -50,16 +50,31 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label for="image_path" class="form-label small text-muted fw-semibold">Image URL (Optional)</label>
-                        <input type="url" id="image_path" class="form-control" placeholder="https://example.com/image.jpg">
-                        <div class="invalid-feedback" id="err-image_path"></div>
+                        <label for="image" class="form-label small text-muted fw-semibold">Product Image (Optional)</label>
+                        <div id="image-preview-container" class="mb-2 d-none">
+                            <img id="image-preview" src="" alt="Product Image Preview" class="img-thumbnail rounded-3" style="max-height: 120px; object-fit: cover;">
+                        </div>
+                        <input type="file" id="image" class="form-control" accept="image/*">
+                        <div class="invalid-feedback" id="err-image"></div>
                     </div>
                 </div>
 
+                <div class="mb-3">
+                    <label for="keywords" class="form-label small text-muted fw-semibold">AI Keywords</label>
+                    <input type="text" id="keywords" class="form-control form-control-sm" placeholder="e.g. ergonomic, wireless, long battery life">
+                    <div class="invalid-feedback" id="err-keywords"></div>
+                </div>
+
                 <div class="mb-4">
-                    <label for="description" class="form-label small text-muted fw-semibold">Description</label>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label for="description" class="form-label small text-muted fw-semibold mb-0">Description</label>
+                        <button type="button" id="btn-generate-ai" class="btn btn-sm btn-outline-emerald rounded-2">
+                            <i class="bi bi-sparkles me-1"></i> Generate with AI
+                        </button>
+                    </div>
                     <textarea id="description" class="form-control" rows="4" placeholder="Detailed product specifications..."></textarea>
                     <div class="invalid-feedback" id="err-description"></div>
+                    <div id="ai-error-alert" class="alert alert-danger d-none rounded-3 mt-2 py-2 px-3 small mb-0" role="alert"></div>
                 </div>
 
                 <div class="form-check form-switch mb-4">
@@ -104,9 +119,15 @@ async function initForm() {
             document.getElementById('category_id').value = p.category ? p.category.id : '';
             document.getElementById('price').value = p.price;
             document.getElementById('stock').value = p.stock;
-            document.getElementById('image_path').value = p.image_path || '';
             document.getElementById('description').value = p.description || '';
             document.getElementById('is_active').checked = !!p.is_active;
+
+            if (p.image_path) {
+                const previewImg = document.getElementById('image-preview');
+                const previewContainer = document.getElementById('image-preview-container');
+                previewImg.src = p.image_path;
+                previewContainer.classList.remove('d-none');
+            }
         } catch (e) {
             alert('Failed to load product details for editing.');
             window.location.href = '/admin/products';
@@ -114,19 +135,48 @@ async function initForm() {
     }
 }
 
+document.getElementById('image').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const previewImg = document.getElementById('image-preview');
+    const previewContainer = document.getElementById('image-preview-container');
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            previewImg.src = event.target.result;
+            previewContainer.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
 document.getElementById('product-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     clearValidationErrors();
 
     const name = document.getElementById('name').value.trim();
-    const category_id = parseInt(document.getElementById('category_id').value);
-    const price = parseFloat(document.getElementById('price').value);
-    const stock = parseInt(document.getElementById('stock').value);
-    const image_path = document.getElementById('image_path').value.trim() || null;
+    const category_id = document.getElementById('category_id').value;
+    const price = document.getElementById('price').value;
+    const stock = document.getElementById('stock').value;
     const description = document.getElementById('description').value.trim();
-    const is_active = document.getElementById('is_active').checked;
+    const is_active = document.getElementById('is_active').checked ? '1' : '0';
+    const imageFile = document.getElementById('image').files[0];
 
-    const payload = { name, category_id, price, stock, image_path, description, is_active };
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('category_id', category_id);
+    formData.append('price', price);
+    formData.append('stock', stock);
+    formData.append('description', description);
+    formData.append('is_active', is_active);
+
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+
+    if (editProductId) {
+        formData.append('_method', 'PUT');
+    }
 
     const btn = document.getElementById('btn-submit-form');
     const origText = btn.innerHTML;
@@ -135,11 +185,9 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
 
     try {
         const endpoint = editProductId ? `/products/${editProductId}` : '/products';
-        const method = editProductId ? 'PUT' : 'POST';
-
         await apiFetch(endpoint, {
-            method,
-            body: JSON.stringify(payload)
+            method: 'POST',
+            body: formData
         });
 
         window.location.href = '/admin/products';
@@ -159,6 +207,62 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
     }
 });
 
+document.getElementById('btn-generate-ai').addEventListener('click', async () => {
+    clearValidationErrors();
+
+    const nameInput = document.getElementById('name');
+    const keywordsInput = document.getElementById('keywords');
+    const aiErrorAlert = document.getElementById('ai-error-alert');
+
+    const name = nameInput.value.trim();
+    const keywords = keywordsInput.value.trim();
+
+    let hasValidationError = false;
+    if (!name) {
+        nameInput.classList.add('is-invalid');
+        const errName = document.getElementById('err-name');
+        if (errName) errName.textContent = 'Product name is required for AI description.';
+        hasValidationError = true;
+    }
+    if (!keywords) {
+        keywordsInput.classList.add('is-invalid');
+        const errKw = document.getElementById('err-keywords');
+        if (errKw) errKw.textContent = 'Keywords are required for AI description.';
+        hasValidationError = true;
+    }
+
+    if (hasValidationError) {
+        return;
+    }
+
+    const btn = document.getElementById('btn-generate-ai');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Generating...`;
+
+    try {
+        const res = await apiFetch('/admin/products/generate-description', {
+            method: 'POST',
+            body: JSON.stringify({ name, keywords })
+        });
+
+        if (res && res.description) {
+            document.getElementById('description').value = res.description;
+        }
+    } catch (err) {
+        if (err.errors) {
+            showInlineValidationErrors(err.errors);
+        }
+        if (aiErrorAlert) {
+            aiErrorAlert.textContent = err.message || 'Failed to generate description. Please try again.';
+            aiErrorAlert.classList.remove('d-none');
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+    }
+});
+
 function showInlineValidationErrors(errors) {
     for (const key in errors) {
         const input = document.getElementById(key);
@@ -170,7 +274,12 @@ function showInlineValidationErrors(errors) {
 
 function clearValidationErrors() {
     const alertBox = document.getElementById('form-error-alert');
-    alertBox.classList.add('d-none');
+    if (alertBox) alertBox.classList.add('d-none');
+    const aiErrorAlert = document.getElementById('ai-error-alert');
+    if (aiErrorAlert) {
+        aiErrorAlert.classList.add('d-none');
+        aiErrorAlert.textContent = '';
+    }
     document.querySelectorAll('.form-control, .form-select').forEach(el => el.classList.remove('is-invalid'));
     document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
 }

@@ -15,12 +15,21 @@
     <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: #FFFFFF;">
         <div class="card-body p-3 p-md-4">
             <form id="filter-form" class="row g-3 align-items-center" onsubmit="return false;">
-                <!-- Search Input -->
+                <!-- Search Input with Search Mode Toggle -->
                 <div class="col-12 col-md-3">
-                    <label for="filter-search" class="form-label small text-muted fw-semibold mb-1">Search</label>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <label for="filter-search" class="form-label small text-muted fw-semibold mb-0">Search</label>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Search Mode">
+                            <input type="radio" class="btn-check" name="search_mode" id="search-mode-exact" value="exact" checked>
+                            <label class="btn btn-outline-secondary py-0 px-2 small" for="search-mode-exact" style="font-size: 0.75rem;">Exact match</label>
+                            
+                            <input type="radio" class="btn-check" name="search_mode" id="search-mode-ai" value="ai">
+                            <label class="btn btn-outline-emerald py-0 px-2 small" for="search-mode-ai" style="font-size: 0.75rem;"><i class="bi bi-sparkles me-1"></i>AI search</label>
+                        </div>
+                    </div>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" id="filter-search" class="form-control border-start-0 ps-0" placeholder="Product name...">
+                        <input type="text" id="filter-search" class="form-control border-start-0 ps-0" placeholder="Product name or concept...">
                     </div>
                 </div>
 
@@ -104,10 +113,32 @@ async function fetchProducts(page = 1) {
     const grid = document.getElementById('products-grid');
     grid.classList.add('grid-fade-out');
 
+    const searchMode = document.querySelector('input[name="search_mode"]:checked')?.value || 'exact';
+    const search = document.getElementById('filter-search').value.trim();
+
+    // If AI search mode is active and user provided a search query, call semantic search endpoint
+    if (searchMode === 'ai' && search) {
+        try {
+            const res = await apiFetch(`/products/search?q=${encodeURIComponent(search)}`);
+            renderProducts(res.data || []);
+            renderPagination(null); // AI search returns direct top relevant matches
+        } catch (e) {
+            grid.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-exclamation-triangle text-danger display-4"></i>
+                    <h4 class="font-heading mt-3">AI Search Failed</h4>
+                    <p class="text-muted">${e.message || 'Unable to perform semantic search right now.'}</p>
+                </div>
+            `;
+        } finally {
+            grid.classList.remove('grid-fade-out');
+        }
+        return;
+    }
+
     const params = new URLSearchParams();
     params.set('page', page);
 
-    const search = document.getElementById('filter-search').value.trim();
     if (search) params.set('search', search);
 
     const category = document.getElementById('filter-category').value;
@@ -283,6 +314,9 @@ function renderPagination(meta) {
 }
 
 // Event Listeners for Filters
+document.querySelectorAll('input[name="search_mode"]').forEach(radio => {
+    radio.addEventListener('change', () => fetchProducts(1));
+});
 document.getElementById('filter-search').addEventListener('input', debounce(() => fetchProducts(1), 300));
 document.getElementById('filter-category').addEventListener('change', () => fetchProducts(1));
 document.getElementById('filter-min-price').addEventListener('input', debounce(() => fetchProducts(1), 300));
@@ -292,6 +326,8 @@ document.getElementById('filter-sort').addEventListener('change', () => fetchPro
 
 document.getElementById('btn-reset-filters').addEventListener('click', () => {
     document.getElementById('filter-form').reset();
+    const exactRadio = document.getElementById('search-mode-exact');
+    if (exactRadio) exactRadio.checked = true;
     fetchProducts(1);
 });
 
